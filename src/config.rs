@@ -10,25 +10,22 @@ use crate::interface;
 pub(crate) struct PersistentConfig {
     com_scan_direction: ComScanDirection,
     com_layout: ComLayout,
+    column_remap: ColumnRemap,
+    nibble_remap: NibbleRemap,
+    increment_axis: IncrementAxis,
 }
 
 impl PersistentConfig {
     /// Transmit commands to the display at `iface` necessary to put that display into the
     /// configuration encoded in `self`.
-    pub(crate) fn send<DI>(
-        &self,
-        iface: &mut DI,
-        increment_axis: IncrementAxis,
-        column_remap: ColumnRemap,
-        nibble_remap: NibbleRemap,
-    ) -> Result<(), CommandError<DI::Error>>
+    pub(crate) fn send<DI>(&self, iface: &mut DI) -> Result<(), CommandError<DI::Error>>
     where
         DI: interface::DisplayInterface,
     {
         Command::SetRemapping(
-            increment_axis,
-            column_remap,
-            nibble_remap,
+            self.increment_axis,
+            self.column_remap,
+            self.nibble_remap,
             self.com_scan_direction,
             self.com_layout,
         )
@@ -47,6 +44,7 @@ pub struct Config {
     second_precharge_period_cmd: Option<Command>,
     precharge_voltage_cmd: Option<Command>,
     com_deselect_voltage_cmd: Option<Command>,
+    function_selection_cmd: Option<Command>,
 }
 
 impl Config {
@@ -54,11 +52,20 @@ impl Config {
     /// display will not function correctly unless they are set, so they must be provided in the
     /// constructor. All other options can be optionally set by calling the provided builder
     /// methods on `Config`.
-    pub fn new(com_scan_direction: ComScanDirection, com_layout: ComLayout) -> Self {
+    pub fn new(
+        com_scan_direction: ComScanDirection,
+        com_layout: ComLayout,
+        column_remap: ColumnRemap,
+        increment_axis: IncrementAxis,
+        nibble_remap: NibbleRemap,
+    ) -> Self {
         Config {
             persistent_config: PersistentConfig {
                 com_scan_direction: com_scan_direction,
                 com_layout: com_layout,
+                column_remap: column_remap,
+                increment_axis: increment_axis,
+                nibble_remap: nibble_remap,
             },
             contrast_current_cmd: None,
             phase_lengths_cmd: None,
@@ -67,6 +74,16 @@ impl Config {
             second_precharge_period_cmd: None,
             precharge_voltage_cmd: None,
             com_deselect_voltage_cmd: None,
+            function_selection_cmd: None,
+        }
+    }
+
+    /// Extend this `Config` to explicitly configure the function selection. See
+    /// `Command::SetFunctionSelection`.
+    pub fn function_selection(self, function_select: FunctionSelection) -> Self {
+        Self {
+            function_selection_cmd: Some(Command::SetFunctionSelection(function_select)),
+            ..self
         }
     }
 
@@ -155,6 +172,9 @@ impl Config {
             .map_or(Ok(()), |c| c.send(iface))?;
         self.com_deselect_voltage_cmd
             .map_or(Ok(()), |c| c.send(iface))?;
+        self.function_selection_cmd
+            .map_or(Ok(()), |c| c.send(iface))?;
+
         Ok(())
     }
 }

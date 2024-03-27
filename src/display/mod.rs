@@ -84,12 +84,10 @@ where
         Command::SetMuxRatio(self.display_size.1 as u8).send(&mut self.iface)?;
         Command::SetDisplayOffset(self.display_offset.1 as u8).send(&mut self.iface)?;
         Command::SetStartLine(0).send(&mut self.iface)?;
-        self.persistent_config.as_ref().unwrap().send(
-            &mut self.iface,
-            IncrementAxis::Horizontal,
-            ColumnRemap::Forward,
-            NibbleRemap::Forward,
-        )?;
+        self.persistent_config
+            .as_ref()
+            .unwrap()
+            .send(&mut self.iface)?;
         self.sleep(false)?;
         Command::SetDisplayMode(DisplayMode::Normal).send(&mut self.iface)
     }
@@ -150,8 +148,8 @@ where
             || lower_right.1 > NUM_PIXEL_ROWS as i16
             || upper_left.0 >= lower_right.0
             || upper_left.1 >= lower_right.1
-            || upper_left.0.rem_euclid(4) != 0
-            || lower_right.0.rem_euclid(4) != 0
+        //|| upper_left.0.rem_euclid(4) != 0
+        //|| lower_right.0.rem_euclid(4) != 0
         {
             return Err(CommandError::OutOfRange);
         }
@@ -207,7 +205,13 @@ mod tests {
     fn init_defaults() {
         let di = TestSpyInterface::new();
         let mut disp = Display::new(di.split(), Px(128, 64), Px(0, 0));
-        let cfg = Config::new(ComScanDirection::RowZeroLast, ComLayout::DualProgressive);
+        let cfg = Config::new(
+            ComScanDirection::RowZeroLast,
+            ComLayout::DualProgressive,
+            ColumnRemap::Forward,
+            IncrementAxis::Horizontal,
+            NibbleRemap::Forward,
+        );
         disp.init(cfg).unwrap();
         #[cfg_attr(rustfmt, rustfmt_skip)]
         di.check_multi(sends!(
@@ -226,14 +230,20 @@ mod tests {
     fn init_many_options() {
         let di = TestSpyInterface::new();
         let mut disp = Display::new(di.split(), Px(256, 128), Px(0, 0));
-        let cfg = Config::new(ComScanDirection::RowZeroLast, ComLayout::DualProgressive)
-            .contrast_current(160)
-            .phase_lengths(5, 14)
-            .clock_fosc_divset(7, 0)
-            .display_enhancements(true, false)
-            .second_precharge_period(4)
-            .precharge_voltage(5)
-            .com_deselect_voltage(6);
+        let cfg = Config::new(
+            ComScanDirection::RowZeroLast,
+            ComLayout::DualProgressive,
+            ColumnRemap::Forward,
+            IncrementAxis::Horizontal,
+            NibbleRemap::Forward,
+        )
+        .contrast_current(160)
+        .phase_lengths(5, 14)
+        .clock_fosc_divset(7, 0)
+        .display_enhancements(true, false)
+        .second_precharge_period(4)
+        .precharge_voltage(5)
+        .com_deselect_voltage(6);
         disp.init(cfg).unwrap();
         #[cfg_attr(rustfmt, rustfmt_skip)]
         di.check_multi(sends!(
@@ -259,7 +269,13 @@ mod tests {
     fn init_row_offset() {
         let di = TestSpyInterface::new();
         let mut disp = Display::new(di.split(), Px(128, 64), Px(0, 32));
-        let cfg = Config::new(ComScanDirection::RowZeroLast, ComLayout::DualProgressive);
+        let cfg = Config::new(
+            ComScanDirection::RowZeroLast,
+            ComLayout::DualProgressive,
+            ColumnRemap::Forward,
+            IncrementAxis::Horizontal,
+            NibbleRemap::Forward,
+        );
         disp.init(cfg).unwrap();
         #[cfg_attr(rustfmt, rustfmt_skip)]
         di.check_multi(sends!(
@@ -278,7 +294,13 @@ mod tests {
     fn region_build() {
         let di = TestSpyInterface::new();
         let mut disp = Display::new(di.split(), Px(128, 64), Px(0, 0));
-        let cfg = Config::new(ComScanDirection::RowZeroLast, ComLayout::DualProgressive);
+        let cfg = Config::new(
+            ComScanDirection::RowZeroLast,
+            ComLayout::DualProgressive,
+            ColumnRemap::Forward,
+            IncrementAxis::Horizontal,
+            NibbleRemap::Forward,
+        );
         disp.init(cfg).unwrap();
 
         // In range, correctly ordered, and columns in 4s.
@@ -306,7 +328,13 @@ mod tests {
     fn overscanned_region_build() {
         let di = TestSpyInterface::new();
         let mut disp = Display::new(di.split(), Px(128, 64), Px(0, 0));
-        let cfg = Config::new(ComScanDirection::RowZeroLast, ComLayout::DualProgressive);
+        let cfg = Config::new(
+            ComScanDirection::RowZeroLast,
+            ComLayout::DualProgressive,
+            ColumnRemap::Forward,
+            IncrementAxis::Horizontal,
+            NibbleRemap::Forward,
+        );
         disp.init(cfg).unwrap();
 
         // Correctly ordered, and columns in 4s.

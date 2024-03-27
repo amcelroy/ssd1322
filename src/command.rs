@@ -116,11 +116,22 @@ pub enum DisplayMode {
     Inverse,
 }
 
+/// This double byte command is used to enable or disable the VDD regulator.
+/// Internal VDD regulator is selected when the bit A[0] is set to 1b, while external VDD is selected when A[0] is
+/// set to 0b.
+#[derive(Clone, Copy)]
+pub enum FunctionSelection {
+    ExternalVdd,
+    InternalVdd,
+}
+
 /// Enumerates most of the valid commands that can be sent to the SSD1322 along with their
 /// parameter values. Commands which accept an array of similar "arguments" as a slice are encoded
 /// by `BufCommand` instead to avoid lifetime parameters on this enum.
 #[derive(Clone, Copy)]
 pub enum Command {
+    SetFunctionSelection(FunctionSelection),
+
     /// Enable the gray scale gamma table (see `BufCommand::SetGrayScaleTable`).
     EnableGrayScaleTable,
     /// Set the column start and end address range when writing to the display RAM. The column
@@ -228,7 +239,7 @@ pub enum CommandError<IE> {
     BadTableLength,
 }
 
-impl<IE > CommandError<IE> {
+impl<IE> CommandError<IE> {
     /// Unwrap a `CommandError` that is assumed to be of the `InterfaceError` variant, or panic if
     /// it is any other variant. This is particularly used inside the region abstractions where we
     /// assume that non-interface-related errors are prevented by the correctness checks performed
@@ -265,6 +276,13 @@ impl Command {
     {
         let mut arg_buf = [0u8; 2];
         let (cmd, data) = match self {
+            Command::SetFunctionSelection(fs) => {
+                let byte = match fs {
+                    FunctionSelection::ExternalVdd => 0x00,
+                    FunctionSelection::InternalVdd => 0x01,
+                };
+                ok_command!(arg_buf, 0xAB, [byte])
+            }
             Command::EnableGrayScaleTable => ok_command!(arg_buf, 0x00, []),
             Command::SetColumnAddress(start, end) => match (start, end) {
                 (0..=BUF_COL_MAX, 0..=BUF_COL_MAX) => ok_command!(arg_buf, 0x15, [start, end]),
