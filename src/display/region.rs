@@ -61,6 +61,23 @@ where
         }
     }
 
+    pub fn draw_pixel(&mut self, color: u8) -> Result<(), DI::Error> {
+        // Set the row and column address registers and put the display in write mode. Unwrap all
+        // of the CommandErrors in this scope as interface errors, as all bounds checking should be
+        // done by the time we are here.
+        (|| {
+            Command::SetColumnAddress(self.buf_left, self.buf_left).send(self.iface)?;
+            Command::SetRowAddress(self.top, self.top).send(self.iface)?;
+            BufCommand::WriteImageData(&[]).send(self.iface)?;
+            Ok(())
+        })()
+        .map_err(CommandError::unwrap_interface)?;
+
+        self.iface.send_data(&[255, 250])?;
+
+        Ok(())
+    }
+
     /// Draw packed-pixel image data into the region, such that each byte is two 4-bit gray scale
     /// values of horizontally-adjacent pixels. Pixels are drawn left-to-right and top-to-bottom.
     pub fn draw_packed<I>(&mut self, mut iter: I) -> Result<(), DI::Error>

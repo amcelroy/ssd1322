@@ -22,6 +22,7 @@ use crate::command::*;
 use crate::config::{Config, PersistentConfig};
 use crate::display::overscanned_region::OverscannedRegion;
 use crate::display::region::Region;
+use crate::display::Command;
 use crate::interface;
 
 /// A pixel coordinate pair of `column` and `row`. `column` must be in the range [0,
@@ -193,6 +194,95 @@ where
             self.display_size.0,
             self.display_offset.0,
         ))
+    }
+}
+
+#[cfg(feature = "graphics")]
+mod graphics {
+    use core::any::Any;
+
+    use eg::{
+        draw_target::DrawTarget,
+        geometry::{Dimensions, OriginDimensions, Size},
+        pixelcolor::GrayColor,
+        primitives::PointsIter,
+    };
+    use embedded_graphics as eg;
+
+    use crate::{command::Command, display::PixelCoord, interface, Display};
+
+    #[derive(Debug)]
+    pub enum GraphicsError {
+        RegionMappingError,
+    }
+
+    impl<DI> OriginDimensions for Display<DI>
+    where
+        DI: interface::DisplayInterface,
+    {
+        fn size(&self) -> Size {
+            Size::new(self.display_size.0 as u32, self.display_size.0 as u32)
+        }
+    }
+
+    impl<DI> DrawTarget for Display<DI>
+    where
+        DI: interface::DisplayInterface,
+    {
+        type Color = eg::pixelcolor::Gray4;
+
+        type Error = GraphicsError;
+
+        fn draw_iter<I>(&mut self, pixels: I) -> Result<(), Self::Error>
+        where
+            I: IntoIterator<Item = eg::prelude::Pixel<Self::Color>>,
+        {
+            pixels.into_iter().for_each(|pixel| {
+                let ul = PixelCoord(pixel.0.x as i16, pixel.0.y as i16);
+                let lr = PixelCoord((pixel.0.x + 1) as i16, (pixel.0.y + 1) as i16);
+                let _ = self
+                    .region(ul, lr)
+                    .map_err(|_e| GraphicsError::RegionMappingError)
+                    .unwrap()
+                    .draw_pixel(pixel.1.luma());
+            });
+
+            Ok(())
+        }
+
+        fn fill_contiguous<I>(
+            &mut self,
+            area: &eg::primitives::Rectangle,
+            colors: I,
+        ) -> Result<(), Self::Error>
+        where
+            I: IntoIterator<Item = Self::Color>,
+        {
+            let upper_left = PixelCoord(area.top_left.x as i16, area.top_left.y as i16);
+            let lower_right = PixelCoord(
+                upper_left.0 + area.size.width as i16,
+                upper_left.1 + area.size.height as i16,
+            );
+
+            let _ = self
+                .region(upper_left, lower_right)
+                .map_err(|_e| GraphicsError::RegionMappingError)?
+                .draw_packed(colors.into_iter().map(|f| 255));
+
+            Ok(())
+        }
+
+        fn fill_solid(
+            &mut self,
+            area: &eg::primitives::Rectangle,
+            color: Self::Color,
+        ) -> Result<(), Self::Error> {
+            self.fill_contiguous(area, core::iter::repeat(color))
+        }
+
+        fn clear(&mut self, color: Self::Color) -> Result<(), Self::Error> {
+            self.fill_solid(&self.bounding_box(), color)
+        }
     }
 }
 

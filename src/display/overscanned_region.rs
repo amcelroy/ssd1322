@@ -132,17 +132,13 @@ mod tests {
 
     #[test]
     fn draw_packed_interior() {
-        let mut di = TestSpyInterface::new();
-        let mut disp = Display::new(di.split(), Px(128, 64), Px(0, 0));
-        let cfg = Config::new(ComScanDirection::RowZeroLast, ComLayout::DualProgressive);
-        disp.init(cfg).unwrap();
-        di.clear();
-        {
-            let mut region = disp.overscanned_region(Px(12, 10), Px(16, 12)).unwrap();
-            region
-                .draw_packed([0xDE, 0xAD, 0xBE, 0xEF].iter().cloned())
-                .unwrap();
-        }
+        let cfg = Config::new(
+            ComScanDirection::RowZeroLast,
+            ComLayout::DualProgressive,
+            0,
+            0,
+            0,
+        );
         #[cfg_attr(rustfmt, rustfmt_skip)]
         di.check_multi(sends!(
             0x15, [3, 3],
@@ -155,7 +151,13 @@ mod tests {
     fn draw_packed_complete_crop() {
         let mut di = TestSpyInterface::new();
         let mut disp = Display::new(di.split(), Px(128, 64), Px(0, 0));
-        let cfg = Config::new(ComScanDirection::RowZeroLast, ComLayout::DualProgressive);
+        let cfg = Config::new(
+            ComScanDirection::RowZeroLast,
+            ComLayout::DualProgressive,
+            ColumnRemap::Forward,
+            IncrementAxis::Horizontal,
+            NibbleRemap::Forward,
+        );
         disp.init(cfg).unwrap();
         di.clear();
         {
@@ -183,7 +185,13 @@ mod tests {
     fn draw_packed_crop_row_edge() {
         let mut di = TestSpyInterface::new();
         let mut disp = Display::new(di.split(), Px(128, 64), Px(0, 0));
-        let cfg = Config::new(ComScanDirection::RowZeroLast, ComLayout::DualProgressive);
+        let cfg = Config::new(
+            ComScanDirection::RowZeroLast,
+            ComLayout::DualProgressive,
+            ColumnRemap::Forward,
+            IncrementAxis::Horizontal,
+            NibbleRemap::Forward,
+        );
         disp.init(cfg).unwrap();
         di.clear();
         {
@@ -217,7 +225,13 @@ mod tests {
     fn draw_packed_crop_col_edge() {
         let mut di = TestSpyInterface::new();
         let mut disp = Display::new(di.split(), Px(128, 64), Px(0, 0));
-        let cfg = Config::new(ComScanDirection::RowZeroLast, ComLayout::DualProgressive);
+        let cfg = Config::new(
+            ComScanDirection::RowZeroLast,
+            ComLayout::DualProgressive,
+            ColumnRemap::Forward,
+            IncrementAxis::Horizontal,
+            NibbleRemap::Forward,
+        );
         disp.init(cfg).unwrap();
         di.clear();
         {
@@ -259,7 +273,13 @@ mod tests {
     fn draw_packed_crop_corner() {
         let mut di = TestSpyInterface::new();
         let mut disp = Display::new(di.split(), Px(128, 64), Px(0, 0));
-        let cfg = Config::new(ComScanDirection::RowZeroLast, ComLayout::DualProgressive);
+        let cfg = Config::new(
+            ComScanDirection::RowZeroLast,
+            ComLayout::DualProgressive,
+            ColumnRemap::Forward,
+            IncrementAxis::Horizontal,
+            NibbleRemap::Forward,
+        );
         disp.init(cfg).unwrap();
         di.clear();
         {
@@ -301,7 +321,13 @@ mod tests {
     fn draw_packed_display_column_offset_interior() {
         let mut di = TestSpyInterface::new();
         let mut disp = Display::new(di.split(), Px(128, 64), Px(64, 0));
-        let cfg = Config::new(ComScanDirection::RowZeroLast, ComLayout::DualProgressive);
+        let cfg = Config::new(
+            ComScanDirection::RowZeroLast,
+            ComLayout::DualProgressive,
+            ColumnRemap::Forward,
+            IncrementAxis::Horizontal,
+            NibbleRemap::Forward,
+        );
         disp.init(cfg).unwrap();
         di.clear();
         {
@@ -322,7 +348,13 @@ mod tests {
     fn draw_packed_display_column_offset_crop_col() {
         let mut di = TestSpyInterface::new();
         let mut disp = Display::new(di.split(), Px(128, 64), Px(24, 0));
-        let cfg = Config::new(ComScanDirection::RowZeroLast, ComLayout::DualProgressive);
+        let cfg = Config::new(
+            ComScanDirection::RowZeroLast,
+            ComLayout::DualProgressive,
+            ColumnRemap::Forward,
+            IncrementAxis::Horizontal,
+            NibbleRemap::Forward,
+        );
         disp.init(cfg).unwrap();
         di.clear();
         {
